@@ -25,19 +25,19 @@ public class Field {
     /**
      * The Name.
      */
-    public String name;
+    private String name;
 
     private KeyType keyType = KeyType.NULL;
 
     /**
      * The Type.
      */
-    public int type;
+    private int type;
 
     /**
      * The Value.
      */
-    public Object value;
+    private Object value;
 
     /**
      * Instantiates a new Field.
@@ -142,6 +142,6 @@ public class Field {
 
     @Override
     public String toString() {
-        return String.format("[%s,%s]", name, String.valueOf(value));
+        return String.format("[%s,%s]", name, value);
     }
 }

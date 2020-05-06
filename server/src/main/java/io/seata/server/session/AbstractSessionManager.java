@@ -15,6 +15,8 @@
  */
 package io.seata.server.session;
 
+import io.seata.core.exception.BranchTransactionException;
+import io.seata.core.exception.GlobalTransactionException;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.exception.TransactionExceptionCode;
 import io.seata.core.model.BranchStatus;
@@ -25,16 +27,8 @@ import io.seata.server.store.TransactionStoreManager.LogOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * The type Abstract session manager.
- *
- * @author sharajava
  */
 public abstract class AbstractSessionManager implements SessionManager, SessionLifecycleListener {
 
@@ -42,11 +36,6 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
      * The constant LOGGER.
      */
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractSessionManager.class);
-
-    /**
-     * The Session map.
-     */
-    protected Map<Long, GlobalSession> sessionMap = new ConcurrentHashMap<>();
 
     /**
      * The Transaction store manager.
@@ -57,6 +46,12 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
      * The Name.
      */
     protected String name;
+
+    /**
+     * Instantiates a new Abstract session manager.
+     */
+    public AbstractSessionManager() {
+    }
 
     /**
      * Instantiates a new Abstract session manager.
@@ -73,15 +68,6 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
             LOGGER.debug("MANAGER[" + name + "] SESSION[" + session + "] " + LogOperation.GLOBAL_ADD);
         }
         writeSession(LogOperation.GLOBAL_ADD, session);
-        sessionMap.put(session.getTransactionId(), session);
-
-    }
-
-
-
-    @Override
-    public GlobalSession findGlobalSession(Long transactionId) throws TransactionException {
-        return sessionMap.get(transactionId);
     }
 
     @Override
@@ -98,8 +84,6 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
             LOGGER.debug("MANAGER[" + name + "] SESSION[" + session + "] " + LogOperation.GLOBAL_REMOVE);
         }
         writeSession(LogOperation.GLOBAL_REMOVE, session);
-        sessionMap.remove(session.getTransactionId());
-
     }
 
     @Override
@@ -114,7 +98,7 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     public void updateBranchSessionStatus(BranchSession branchSession, BranchStatus status)
         throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.GLOBAL_ADD);
+            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_UPDATE);
         }
         writeSession(LogOperation.BRANCH_UPDATE, branchSession);
     }
@@ -123,26 +107,9 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     public void removeBranchSession(GlobalSession globalSession, BranchSession branchSession)
         throws TransactionException {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.GLOBAL_ADD);
+            LOGGER.debug("MANAGER[" + name + "] SESSION[" + branchSession + "] " + LogOperation.BRANCH_REMOVE);
         }
         writeSession(LogOperation.BRANCH_REMOVE, branchSession);
-
-    }
-
-    @Override
-    public Collection<GlobalSession> allSessions() {
-        return sessionMap.values();
-    }
-
-    @Override
-    public List<GlobalSession> findGlobalSessions(SessionCondition condition) {
-        List<GlobalSession> found = new ArrayList<>();
-        for (GlobalSession globalSession : sessionMap.values()) {
-                if (System.currentTimeMillis() - globalSession.getBeginTime() > condition.getOverTimeAliveMills()) {
-                    found.add(globalSession);
-                }
-        }
-        return found;
     }
 
     @Override
@@ -174,18 +141,50 @@ public abstract class AbstractSessionManager implements SessionManager, SessionL
     @Override
     public void onClose(GlobalSession globalSession) throws TransactionException {
         globalSession.setActive(false);
-
     }
 
     @Override
     public void onEnd(GlobalSession globalSession) throws TransactionException {
         removeGlobalSession(globalSession);
-
     }
 
-    private void writeSession(LogOperation logOperation, SessionStorable sessionStorable) throws TransactionException{
+    private void writeSession(LogOperation logOperation, SessionStorable sessionStorable) throws TransactionException {
         if (!transactionStoreManager.writeSession(logOperation, sessionStorable)) {
-            throw new TransactionException(TransactionExceptionCode.FailedWriteSession);
+            if (LogOperation.GLOBAL_ADD.equals(logOperation)) {
+                throw new GlobalTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to store global session");
+            } else if (LogOperation.GLOBAL_UPDATE.equals(logOperation)) {
+                throw new GlobalTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to update global session");
+            } else if (LogOperation.GLOBAL_REMOVE.equals(logOperation)) {
+                throw new GlobalTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to remove global session");
+            } else if (LogOperation.BRANCH_ADD.equals(logOperation)) {
+                throw new BranchTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to store branch session");
+            } else if (LogOperation.BRANCH_UPDATE.equals(logOperation)) {
+                throw new BranchTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to update branch session");
+            } else if (LogOperation.BRANCH_REMOVE.equals(logOperation)) {
+                throw new BranchTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Fail to remove branch session");
+            } else {
+                throw new BranchTransactionException(TransactionExceptionCode.FailedWriteSession,
+                    "Unknown LogOperation:" + logOperation.name());
+            }
         }
+    }
+
+    @Override
+    public void destroy() {
+    }
+
+    /**
+     * Sets transaction store manager.
+     *
+     * @param transactionStoreManager the transaction store manager
+     */
+    public void setTransactionStoreManager(TransactionStoreManager transactionStoreManager) {
+        this.transactionStoreManager = transactionStoreManager;
     }
 }

@@ -19,14 +19,12 @@ import io.seata.core.context.RootContext;
 import io.seata.core.exception.TransactionException;
 import io.seata.core.model.GlobalStatus;
 import io.seata.core.model.TransactionManager;
-import io.seata.tm.DefaultTransactionManager;
-
 import io.seata.tm.TransactionManagerHolder;
 import io.seata.tm.api.transaction.TransactionInfo;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * The type Api test.
@@ -40,12 +38,12 @@ public class APITest {
     /**
      * Init.
      */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         TransactionManagerHolder.set(new TransactionManager() {
             @Override
             public String begin(String applicationId, String transactionServiceGroup, String name, int timeout)
-                throws TransactionException {
+                    throws TransactionException {
                 return DEFAULT_XID;
             }
 
@@ -63,13 +61,18 @@ public class APITest {
             public GlobalStatus getStatus(String xid) throws TransactionException {
                 return GlobalStatus.Begin;
             }
+
+            @Override
+            public GlobalStatus globalReport(String xid, GlobalStatus globalStatus) throws TransactionException {
+                return globalStatus;
+            }
         });
     }
 
     /**
      * Clean root context.
      */
-    @After
+    @AfterEach
     public void cleanRootContext() {
         RootContext.unbind();
     }
@@ -83,8 +86,8 @@ public class APITest {
     public void testCurrent() throws Exception {
         RootContext.bind(DEFAULT_XID);
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
-        Assert.assertEquals(tx.getXid(), DEFAULT_XID);
-        Assert.assertEquals(tx.getStatus(), GlobalStatus.Begin);
+        Assertions.assertEquals(tx.getXid(), DEFAULT_XID);
+        Assertions.assertEquals(tx.getStatus(), GlobalStatus.Begin);
 
     }
 
@@ -96,8 +99,8 @@ public class APITest {
     @Test
     public void testNewTx() throws Exception {
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
-        Assert.assertEquals(tx.getStatus(), GlobalStatus.UnKnown);
-        Assert.assertNull(tx.getXid());
+        Assertions.assertEquals(tx.getStatus(), GlobalStatus.UnKnown);
+        Assertions.assertNull(tx.getXid());
     }
 
     /**
@@ -109,8 +112,8 @@ public class APITest {
     public void testBegin() throws Exception {
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
         tx.begin();
-        Assert.assertEquals(tx.getStatus(), GlobalStatus.Begin);
-        Assert.assertNotNull(tx.getXid());
+        Assertions.assertEquals(tx.getStatus(), GlobalStatus.Begin);
+        Assertions.assertNotNull(tx.getXid());
 
     }
 
@@ -190,9 +193,28 @@ public class APITest {
             });
         } catch (TransactionalExecutor.ExecutionException ex) {
             Throwable oex = ex.getOriginalException();
-            Assert.assertEquals(oex.getMessage(), oexMsg);
+            Assertions.assertEquals(oex.getMessage(), oexMsg);
         }
     }
+
+    @Test
+    public void testGlobalReport() throws Exception {
+        RootContext.bind(DEFAULT_XID);
+        GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
+        tx.globalReport(tx.getStatus());
+
+        Assertions.assertThrows(IllegalStateException.class, () ->  tx.globalReport(null));
+        Assertions.assertThrows(IllegalStateException.class, () -> {
+            RootContext.unbind();
+            GlobalTransaction tx2 = GlobalTransactionContext.getCurrentOrCreate();
+            tx2.globalReport(tx2.getStatus());
+        });
+
+        Assertions.assertEquals(tx.getStatus(), GlobalStatus.Begin);
+        Assertions.assertNotNull(tx.getXid());
+
+    }
+
 
     private static abstract class AbstractTransactionalExecutor implements TransactionalExecutor {
 

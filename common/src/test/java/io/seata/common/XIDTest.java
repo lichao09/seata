@@ -17,7 +17,7 @@ package io.seata.common;
 
 import java.util.Random;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The type Xid test.
  *
  * @author Otis.z
- * @date 2019 /2/22
  */
 public class XIDTest {
 

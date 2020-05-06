@@ -17,7 +17,9 @@ package io.seata.core.context;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 
-import org.junit.Test;
+import io.seata.core.model.BranchType;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,11 +27,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The type Root context test.
  *
  * @author guoyao
- * @date 2019 /3/2
  */
 public class RootContextTest {
 
     private final String DEFAULT_XID = "default_xid";
+
+    private final BranchType DEFAULT_BRANCH_TYPE = BranchType.AT;
 
     /**
      * Test bind and unbind.
@@ -70,17 +73,19 @@ public class RootContextTest {
     /**
      * Test assert not in global transaction with exception.
      */
-    @Test(expected = ShouldNeverHappenException.class)
+    @Test
     public void testAssertNotInGlobalTransactionWithException() {
-        try {
-            RootContext.assertNotInGlobalTransaction();
-            RootContext.bind(DEFAULT_XID);
-            RootContext.assertNotInGlobalTransaction();
-        } finally {
-            //clear
-            RootContext.unbind();
-            assertThat(RootContext.getXID()).isNull();
-        }
+        Assertions.assertThrows(ShouldNeverHappenException.class, () -> {
+            try {
+                RootContext.assertNotInGlobalTransaction();
+                RootContext.bind(DEFAULT_XID);
+                RootContext.assertNotInGlobalTransaction();
+            } finally {
+                //clear
+                RootContext.unbind();
+                assertThat(RootContext.getXID()).isNull();
+            }
+        });
     }
 
     /**
@@ -90,6 +95,17 @@ public class RootContextTest {
     public void testAssertNotInGlobalTransaction() {
         RootContext.assertNotInGlobalTransaction();
         assertThat(RootContext.getXID()).isNull();
+    }
+
+    @Test
+    public void testBindBranchType_And_UnbindBranchType(){
+        assertThat(RootContext.getBranchType()).isNull();
+        assertThat(RootContext.unbindBranchType()).isNull();
+        RootContext.bindBranchType(DEFAULT_BRANCH_TYPE);
+        assertThat(RootContext.unbindBranchType()).isEqualTo(DEFAULT_BRANCH_TYPE.name());
+        RootContext.unbindBranchType();
+        assertThat(RootContext.getBranchType()).isNull();
+        assertThat(RootContext.unbindBranchType()).isNull();
     }
 
 }

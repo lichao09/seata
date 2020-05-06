@@ -48,17 +48,18 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-import com.alibaba.druid.util.JdbcConstants;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.serializer.SerializerFeature;
-import io.seata.rm.datasource.sql.SQLType;
+
+import io.seata.sqlparser.SQLType;
 import io.seata.rm.datasource.sql.struct.Field;
 import io.seata.rm.datasource.sql.struct.KeyType;
 import io.seata.rm.datasource.sql.struct.Row;
 import io.seata.rm.datasource.sql.struct.TableMeta;
 import io.seata.rm.datasource.sql.struct.TableRecords;
-
-import org.junit.Test;
+import io.seata.sqlparser.util.JdbcConstants;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * The type Undo executor test.
@@ -74,7 +75,7 @@ public class UndoExecutorTest {
         f.setName("name");
         f.setValue("x");
         f.setType(Types.VARCHAR);
-        f.setKeyType(KeyType.PrimaryKey);
+        f.setKeyType(KeyType.PRIMARY_KEY);
 
         String s = JSON.toJSONString(f, SerializerFeature.WriteDateUseDateFormat);
 
@@ -88,7 +89,7 @@ public class UndoExecutorTest {
      * Test update.
      */
     @Test
-    public void testUpdate() {
+    public void testUpdate() throws SQLException {
         SQLUndoLog SQLUndoLog = new SQLUndoLog();
         SQLUndoLog.setTableName("my_test_table");
         SQLUndoLog.setSqlType(SQLType.UPDATE);
@@ -98,7 +99,7 @@ public class UndoExecutorTest {
         Row beforeRow = new Row();
 
         Field pkField = new Field();
-        pkField.setKeyType(KeyType.PrimaryKey);
+        pkField.setKeyType(KeyType.PRIMARY_KEY);
         pkField.setName("id");
         pkField.setType(Types.INTEGER);
         pkField.setValue(213);
@@ -123,7 +124,7 @@ public class UndoExecutorTest {
         Row afterRow = new Row();
 
         Field pkField1 = new Field();
-        pkField1.setKeyType(KeyType.PrimaryKey);
+        pkField1.setKeyType(KeyType.PRIMARY_KEY);
         pkField1.setName("id");
         pkField1.setType(Types.INTEGER);
         pkField1.setValue(213);
@@ -147,19 +148,18 @@ public class UndoExecutorTest {
         SQLUndoLog.setAfterImage(afterImage);
 
         AbstractUndoExecutor executor = UndoExecutorFactory.getUndoExecutor(JdbcConstants.MYSQL, SQLUndoLog);
-
-        try {
-            executor.executeOn(new MockConnection());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        MockConnection connection = new MockConnection();
+        AbstractUndoExecutor spy = Mockito.spy(executor);
+        // skip data validation
+        Mockito.doReturn(true).when(spy).dataValidationAndGoOn(connection);
+        spy.executeOn(connection);
     }
 
     /**
      * Test insert.
      */
     @Test
-    public void testInsert() {
+    public void testInsert() throws SQLException {
         SQLUndoLog SQLUndoLog = new SQLUndoLog();
         SQLUndoLog.setTableName("my_test_table");
         SQLUndoLog.setSqlType(SQLType.INSERT);
@@ -171,7 +171,7 @@ public class UndoExecutorTest {
         Row afterRow1 = new Row();
 
         Field pkField = new Field();
-        pkField.setKeyType(KeyType.PrimaryKey);
+        pkField.setKeyType(KeyType.PRIMARY_KEY);
         pkField.setName("id");
         pkField.setType(Types.INTEGER);
         pkField.setValue(213);
@@ -192,7 +192,7 @@ public class UndoExecutorTest {
         Row afterRow = new Row();
 
         Field pkField1 = new Field();
-        pkField1.setKeyType(KeyType.PrimaryKey);
+        pkField1.setKeyType(KeyType.PRIMARY_KEY);
         pkField1.setName("id");
         pkField1.setType(Types.INTEGER);
         pkField1.setValue(214);
@@ -217,19 +217,18 @@ public class UndoExecutorTest {
         SQLUndoLog.setAfterImage(afterImage);
 
         AbstractUndoExecutor executor = UndoExecutorFactory.getUndoExecutor(JdbcConstants.MYSQL, SQLUndoLog);
-
-        try {
-            executor.executeOn(new MockConnection());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        MockConnection connection = new MockConnection();
+        AbstractUndoExecutor spy = Mockito.spy(executor);
+        // skip data validation
+        Mockito.doReturn(true).when(spy).dataValidationAndGoOn(connection);
+        spy.executeOn(connection);
     }
 
     /**
      * Test delete.
      */
     @Test
-    public void testDelete() {
+    public void testDelete() throws SQLException {
         SQLUndoLog SQLUndoLog = new SQLUndoLog();
         SQLUndoLog.setTableName("my_test_table");
         SQLUndoLog.setSqlType(SQLType.DELETE);
@@ -241,7 +240,7 @@ public class UndoExecutorTest {
         Row afterRow1 = new Row();
 
         Field pkField = new Field();
-        pkField.setKeyType(KeyType.PrimaryKey);
+        pkField.setKeyType(KeyType.PRIMARY_KEY);
         pkField.setName("id");
         pkField.setType(Types.INTEGER);
         pkField.setValue(213);
@@ -262,7 +261,7 @@ public class UndoExecutorTest {
         Row afterRow = new Row();
 
         Field pkField1 = new Field();
-        pkField1.setKeyType(KeyType.PrimaryKey);
+        pkField1.setKeyType(KeyType.PRIMARY_KEY);
         pkField1.setName("id");
         pkField1.setType(Types.INTEGER);
         pkField1.setValue(214);
@@ -287,12 +286,11 @@ public class UndoExecutorTest {
         SQLUndoLog.setBeforeImage(beforeImage);
 
         AbstractUndoExecutor executor = UndoExecutorFactory.getUndoExecutor(JdbcConstants.MYSQL, SQLUndoLog);
-
-        try {
-            executor.executeOn(new MockConnection());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        MockConnection connection = new MockConnection();
+        AbstractUndoExecutor spy = Mockito.spy(executor);
+        // skip data validation
+        Mockito.doReturn(true).when(spy).dataValidationAndGoOn(connection);
+        spy.executeOn(connection);
     }
 
     /**

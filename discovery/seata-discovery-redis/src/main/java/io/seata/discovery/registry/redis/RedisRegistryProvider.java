@@ -18,12 +18,9 @@ package io.seata.discovery.registry.redis;
 import io.seata.common.loader.LoadLevel;
 import io.seata.discovery.registry.RegistryProvider;
 import io.seata.discovery.registry.RegistryService;
-import io.seata.discovery.registry.RegistryProvider;
-import io.seata.discovery.registry.RegistryService;
 
 /**
  * @author xingfudeshi@gmail.com
- * @date 2019/04/12
  */
 @LoadLevel(name = "Redis", order = 1)
 public class RedisRegistryProvider implements RegistryProvider {

@@ -15,13 +15,12 @@
  */
 package io.seata.core.rpc.netty;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * The type Netty base config test.
  *
- * @author jimin.jm @alibaba-inc.com
- * @date 2019 /1/7
+ * @author slievrly
  */
 public class NettyBaseConfigTest {
     /**

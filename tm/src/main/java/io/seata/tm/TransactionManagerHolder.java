@@ -17,16 +17,9 @@ package io.seata.tm;
 
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.loader.EnhancedServiceLoader;
-import io.seata.core.exception.TransactionException;
-import io.seata.core.exception.TransactionExceptionCode;
-import io.seata.core.model.GlobalStatus;
 import io.seata.core.model.TransactionManager;
-import io.seata.core.protocol.transaction.*;
-import io.seata.core.rpc.netty.TmRpcClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.TimeoutException;
 
 /**
  * The type Default transaction manager.
@@ -44,7 +37,7 @@ public class TransactionManagerHolder {
         static {
             try {
                 INSTANCE = EnhancedServiceLoader.load(TransactionManager.class);
-                LOGGER.info("TransactionManager Singleton " + INSTANCE);
+                LOGGER.info("TransactionManager Singleton {}", INSTANCE);
             } catch (Throwable anyEx) {
                 LOGGER.error("Failed to load TransactionManager Singleton! ", anyEx);
             }

@@ -18,8 +18,7 @@ package io.seata.config;
 /**
  * The enum Config type.
  *
- * @author jimin.jm @alibaba-inc.com
- * @date 2019 /2/1
+ * @author slievrly
  */
 public enum ConfigType {
     /**
@@ -37,7 +36,23 @@ public enum ConfigType {
     /**
      * Apollo config type.
      */
-    Apollo;
+    Apollo,
+    /**
+     * Consul config type
+     */
+    Consul,
+    /**
+     * Etcd3 config type
+     */
+    Etcd3,
+    /**
+     * spring cloud config type
+     */
+    SpringCloudConfig,
+    /**
+     * Custom config type
+     */
+    Custom;
 
     /**
      * Gets type.
